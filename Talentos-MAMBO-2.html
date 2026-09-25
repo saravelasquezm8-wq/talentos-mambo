@@ -488,7 +488,33 @@ function renderAll(){
 }
 
 fetchActivities();
-setInterval(fetchActivities, 6000); // refresco automático para ver lo que suben otros
+setInterval(()=>{
+  // Refresco silencioso: si estás llenando el formulario de "Enviar actividad",
+  // no lo volvemos a dibujar para no borrar lo que ya escribiste.
+  if(tab === 'enviar' && syncState === 'ok'){
+    fetchActivitiesQuiet();
+  } else {
+    fetchActivities();
+  }
+}, 6000);
+
+async function fetchActivitiesQuiet(){
+  if(API_URL.indexOf('PEGA_AQUI') === 0) return;
+  try{
+    const res = await fetch(API_URL);
+    const list = await res.json();
+    data.activities = list.map(a => ({
+      ...a,
+      basePts: Number(a.basePts), total: Number(a.total), ts: Number(a.ts),
+      bonoResp: a.bonoResp === true || a.bonoResp === 'true',
+      tiempo: a.tiempo === true || a.tiempo === 'true',
+      impactoAlto: a.impactoAlto === true || a.impactoAlto === 'true',
+    }));
+    syncState = 'ok';
+  }catch(e){ /* si falla en silencio, se reintenta en el próximo ciclo */ }
+  // No llamamos renderAll() aquí a propósito: los datos quedan listos
+  // y se ven en cuanto cambies de pestaña, sin interrumpir lo que escribes.
+}
 </script>
 </body>
 </html>
