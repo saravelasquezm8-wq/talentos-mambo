@@ -174,35 +174,44 @@ let period = 'semana'; // semana | mes | historico
 let syncState = 'loading'; // loading | ok | error | unconfigured
 
 async function fetchActivities(){
-  if(API_URL.indexOf('PEGA_AQUI') === 0){ syncState = 'unconfigured'; renderAll(); return; }
+  if(API_URL.indexOf('PEGA_AQUI') === 0){
+    syncState = 'unconfigured';
+    renderAll();
+    return;
+  }
+
   try{
     const res = await fetch(API_URL);
+
+    if(!res.ok){
+      throw new Error('Error HTTP ' + res.status);
+    }
+
     const list = await res.json();
+
     data.activities = list.map(a => ({
       ...a,
-      basePts: Number(a.basePts), total: Number(a.total), ts: Number(a.ts),
+      basePts: Number(a.basePts),
+      total: Number(a.total),
+      ts: Number(a.ts),
       bonoResp: a.bonoResp === true || a.bonoResp === 'true',
       tiempo: a.tiempo === true || a.tiempo === 'true',
       impactoAlto: a.impactoAlto === true || a.impactoAlto === 'true',
     }));
+
     syncState = 'ok';
-  }catch(e){ syncState = 'error'; }
+
+  }catch(e){
+    console.warn('No se pudo actualizar la información:', e);
+
+    // Si ya tenemos datos cargados, los conservamos
+    // y NO reemplazamos la pantalla por el mensaje de error.
+    if(data.activities.length === 0){
+      syncState = 'error';
+    }
+  }
+
   renderAll();
-}
-async function sendAction(payload){
-  const res = await fetch(API_URL, {
-    method:'POST',
-    headers:{'Content-Type':'text/plain;charset=utf-8'}, // evita preflight CORS con Apps Script
-    body: JSON.stringify(payload)
-  });
-  const list = await res.json();
-  data.activities = list.map(a => ({
-    ...a,
-    basePts: Number(a.basePts), total: Number(a.total), ts: Number(a.ts),
-    bonoResp: a.bonoResp === true || a.bonoResp === 'true',
-    tiempo: a.tiempo === true || a.tiempo === 'true',
-    impactoAlto: a.impactoAlto === true || a.impactoAlto === 'true',
-  }));
 }
 
 // ---------- Navegación ----------
