@@ -214,6 +214,40 @@ async function fetchActivities(){
   renderAll();
 }
 
+
+// ---------- Comunicación con Google Apps Script ----------
+async function sendAction(payload){
+  if(API_URL.indexOf('PEGA_AQUI') === 0){
+    throw new Error('API_URL no configurada');
+  }
+
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'text/plain;charset=utf-8'
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if(!res.ok){
+    throw new Error('Error HTTP ' + res.status);
+  }
+
+  const list = await res.json();
+
+  data.activities = list.map(a => ({
+    ...a,
+    basePts: Number(a.basePts),
+    total: Number(a.total),
+    ts: Number(a.ts),
+    bonoResp: a.bonoResp === true || a.bonoResp === 'true',
+    tiempo: a.tiempo === true || a.tiempo === 'true',
+    impactoAlto: a.impactoAlto === true || a.impactoAlto === 'true',
+  }));
+
+  syncState = 'ok';
+}
+
 // ---------- Navegación ----------
 function renderNav(){
   const nav = document.getElementById('nav');
